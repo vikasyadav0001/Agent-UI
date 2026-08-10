@@ -23,7 +23,7 @@ export function OAuthHandler() {
         window.history.replaceState({}, "", window.location.pathname);
         
         // Trigger a hidden message that our adapter will intercept
-        thread.append({ 
+        (thread as any).append?.({ 
           role: "user", 
           content: [{ type: "text", text: "[System: Resume Auth]" }] 
         });

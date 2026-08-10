@@ -1,4 +1,5 @@
 import { ChatGroq } from "@langchain/groq";
+import { ChatMistralAI } from "@langchain/mistralai";
 import {
   HumanMessage,
   AIMessage,
@@ -10,53 +11,133 @@ import {
   createUIMessageStreamResponse,
   type UIMessage,
 } from "ai";
+import { bindMcpToolsToModel } from "@/lib/mcp";
 
 export async function POST(req: Request) {
+  const body = await req.json();
   const {
     messages,
     system,
+    modelName,
+    model: modelFromReq,
+    reasoningEffort,
+    config,
   }: {
     messages: UIMessage[];
     system?: string;
-  } = await req.json();
+    modelName?: string;
+    model?: string;
+    reasoningEffort?: string;
+    config?: { modelName?: string; reasoningEffort?: string };
+  } = body;
+
+  const selectedModelName =
+    modelName ||
+    modelFromReq ||
+    config?.modelName ||
+    "qwen/qwen3.6-27b";
+
+  const effort = reasoningEffort || config?.reasoningEffort;
+
+  const isMistral = selectedModelName.toLowerCase().includes("mistral");
+  const cleanMistralModel = selectedModelName.includes("/")
+    ? selectedModelName.split("/").pop()!
+    : selectedModelName;
+
+  const selectedModel: any = isMistral
+    ? new ChatMistralAI({
+        apiKey: process.env.MISTRAL_API_KEY,
+        model: cleanMistralModel,
+      })
+    : new ChatGroq({
+        apiKey: process.env.GROQ_API_KEY,
+        model: selectedModelName,
+      });
 
   const langchainMessages: BaseMessage[] = [];
 
+  const imageSystemInstruction =
+    "When analyzing images, describe and analyze the image as a single unified whole. Never divide or refer to your description in patches, sub-crops, or sections (such as 'Top Section', 'Bottom Section', 'Middle Section', etc.). Respond naturally as if viewing one cohesive photo or graphic.";
+
   if (system) {
-    langchainMessages.push(new SystemMessage(system));
+    langchainMessages.push(new SystemMessage(`${imageSystemInstruction}\n\n${system}`));
+  } else {
+    langchainMessages.push(new SystemMessage(imageSystemInstruction));
   }
 
   for (const message of messages) {
-    let text = "";
     const msg = message as any;
+    const contentParts: any[] = [];
+
+    const seenImageUrls = new Set<string>();
+
     if (typeof msg.content === "string") {
-      text = msg.content;
+      contentParts.push({ type: "text", text: msg.content });
     } else if (Array.isArray(msg.parts)) {
-      text = msg.parts
-        .filter((p: any) => p.type === "text" && typeof p.text === "string")
-        .map((p: any) => p.text)
-        .join("");
+      for (const part of msg.parts) {
+        if (part.type === "text" && typeof part.text === "string") {
+          contentParts.push({ type: "text", text: part.text });
+        } else if (
+          part.type === "image" ||
+          part.type === "image_url" ||
+          part.type === "file"
+        ) {
+          const url =
+            part.image ||
+            part.url ||
+            part.image_url?.url ||
+            (typeof part.data === "string" ? part.data : undefined);
+          const urlStr = typeof url === "string" ? url : url?.url;
+          if (urlStr && !seenImageUrls.has(urlStr)) {
+            seenImageUrls.add(urlStr);
+            contentParts.push({
+              type: "image_url",
+              image_url: { url: urlStr },
+            });
+          }
+        }
+      }
     }
 
-    if (!text) continue;
+    if (Array.isArray(msg.attachments)) {
+      for (const attachment of msg.attachments) {
+        if (
+          attachment.type === "image" ||
+          attachment.contentType?.startsWith("image/")
+        ) {
+          const url = attachment.url || attachment.content;
+          const urlStr = typeof url === "string" ? url : url?.url;
+          if (urlStr && !seenImageUrls.has(urlStr)) {
+            seenImageUrls.add(urlStr);
+            contentParts.push({
+              type: "image_url",
+              image_url: { url: urlStr },
+            });
+          }
+        }
+      }
+    }
+
+    if (contentParts.length === 0) continue;
+
+    const messageContent =
+      contentParts.length === 1 && contentParts[0].type === "text"
+        ? contentParts[0].text
+        : contentParts;
 
     if (message.role === "system") {
-      langchainMessages.push(new SystemMessage(text));
+      langchainMessages.push(new SystemMessage(messageContent));
     } else if (message.role === "user") {
-      langchainMessages.push(new HumanMessage(text));
+      langchainMessages.push(new HumanMessage({ content: messageContent }));
     } else if (message.role === "assistant") {
-      langchainMessages.push(new AIMessage(text));
+      langchainMessages.push(new AIMessage({ content: messageContent }));
     }
   }
 
-  const model = new ChatGroq({
-    apiKey: process.env.GROQ_API_KEY,
-    model: "qwen/qwen3.6-27b",
-  });
-
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
-      const responseStream = await model.stream(langchainMessages);
+      const activeModel = await bindMcpToolsToModel(selectedModel as any);
+      const responseStream = await activeModel.stream(langchainMessages);
 
       let inReasoning = false;
       let reasoningStarted = false;

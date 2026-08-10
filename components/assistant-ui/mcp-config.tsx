@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client";
 
 import { type FC, type ReactNode, useState, isValidElement } from "react";

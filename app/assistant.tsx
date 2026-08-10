@@ -1,6 +1,10 @@
 "use client";
 
-import { AssistantRuntimeProvider, WebSpeechDictationAdapter } from "@assistant-ui/react";
+import {
+  AssistantRuntimeProvider,
+  WebSpeechDictationAdapter,
+  SimpleImageAttachmentAdapter,
+} from "@assistant-ui/react";
 import {
   useChatRuntime,
   AssistantChatTransport,
@@ -16,6 +20,7 @@ export const Assistant = () => {
     }),
     adapters: {
       dictation: new WebSpeechDictationAdapter(),
+      attachments: new SimpleImageAttachmentAdapter(),
     },
   });
 

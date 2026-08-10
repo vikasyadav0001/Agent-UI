@@ -1,56 +1,19 @@
 export const MODELS = [
-  // OpenAI
-  {
-    name: "GPT-5.4 Nano",
-    value: "gpt-5.4-nano",
-    icon: "/icons/openai.svg",
-    disabled: false,
-    contextWindow: 400_000,
-  },
-  {
-    name: "GPT-5.4 Mini",
-    value: "gpt-5.4-mini",
-    icon: "/icons/openai.svg",
-    disabled: false,
-    contextWindow: 400_000,
-  },
-  // Google
-  {
-    name: "Gemini 3.1 Flash Lite",
-    value: "google-ai-studio/gemini-3.1-flash-lite-preview",
-    icon: "/icons/google.svg",
-    disabled: false,
-    contextWindow: 1_048_576,
-  },
-  // xAI
-  {
-    name: "Grok 4.1 Fast",
-    value: "grok/grok-4-1-fast",
-    icon: "/icons/xai.svg",
-    disabled: false,
-    contextWindow: 2_000_000,
-  },
-  {
-    name: "Grok 3 Mini",
-    value: "grok/grok-3-mini",
-    icon: "/icons/xai.svg",
-    disabled: false,
-    contextWindow: 131_072,
-  },
   // Groq
   {
-    name: "Llama 4 Scout 17B",
-    value: "groq/meta-llama/llama-4-scout-17b-16e-instruct",
-    icon: "/icons/meta.svg",
-    disabled: false,
-    contextWindow: 131_072,
-  },
-  {
-    name: "Qwen3 32B",
-    value: "groq/qwen/qwen3-32b",
+    name: "Qwen 3.6 27B",
+    value: "qwen/qwen3.6-27b",
     icon: "/icons/groq.svg",
     disabled: false,
     contextWindow: 131_072,
+  },
+  // Mistral
+  {
+    name: "Mistral 3",
+    value: "mistral-small-2506",
+    icon: "/icons/mistral.svg",
+    disabled: false,
+    contextWindow: 128_000,
   },
 ] as const;
 

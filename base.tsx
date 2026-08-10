@@ -61,6 +61,7 @@ import {
   unstable_useSlashCommandAdapter,
   useAui,
   useAuiState,
+  useComposerRuntime,
   useVoiceControls,
   useVoiceState,
   type Unstable_SlashCommand,
@@ -590,6 +591,7 @@ function DirectiveChip(props: DirectiveChipProps) {
 }
 
 const Composer: FC = () => {
+  const composerRuntime = useComposerRuntime();
   const mention = unstable_useMentionAdapter({ fallbackIcon: WrenchIcon });
   const slash = unstable_useSlashCommandAdapter({
     commands: slashCommands,
@@ -597,9 +599,27 @@ const Composer: FC = () => {
     fallbackIcon: SlashIcon,
   });
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) {
+          composerRuntime.addAttachment(file);
+        }
+      }
+    }
+  };
+
   return (
     <ComposerPrimitive.Unstable_TriggerPopoverRoot>
-      <ComposerPrimitive.Root className="aui-composer-root relative flex w-full flex-col">
+      <ComposerPrimitive.Root
+        className="aui-composer-root relative flex w-full flex-col"
+        onPaste={handlePaste}
+      >
         <ComposerPrimitive.AttachmentDropzone asChild>
           <div
             data-slot="aui_composer-shell"
