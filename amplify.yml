@@ -1,0 +1,21 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci --cache .npm --prefer-offline
+    build:
+      commands:
+        # Amplify console env vars exist only at build time. Next.js API routes
+        # read keys at runtime, so persist them to .env.production, which
+        # `next start` loads on the server.
+        - env | grep -E '^(OPENAI_API_KEY|GROQ_API_KEY|MISTRAL_API_KEY|EXA_API_KEY|TAVILY_API_KEY|SCALEKIT_ENV_URL|SCALEKIT_CLIENT_ID|SCALEKIT_CLIENT_SECRET|NEXT_PUBLIC_[A-Z_]+)=' >> .env.production
+        - npm run build
+  artifacts:
+    baseDirectory: .next
+    files:
+      - "**/*"
+  cache:
+    paths:
+      - .next/cache/**/*
+      - .npm/**/*
