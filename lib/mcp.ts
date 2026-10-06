@@ -13,6 +13,12 @@ export const mcpServersConfig: Record<string, any> = {
     }
 };
 
+/**
+ * MCP tools never bound to the model. Every bound tool's schema is sent with
+ * each request, so unused ones just add input tokens.
+ */
+const EXCLUDED_TOOLS = new Set(["agent_run"]);
+
 let mcpClientInstance: MultiServerMCPClient | null = null;
 
 /**
@@ -44,7 +50,8 @@ export async function getMcpTools(): Promise<DynamicStructuredTool[]> {
   try {
     const client = await getMcpClient();
     if (!client) return [];
-    return await client.getTools();
+    const tools = await client.getTools();
+    return tools.filter((tool) => !EXCLUDED_TOOLS.has(tool.name));
   } catch (error) {
     console.error("[MCP] Error retrieving tools:", error);
     return [];

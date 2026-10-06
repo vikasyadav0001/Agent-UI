@@ -16,10 +16,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // Initialize base model using active Groq Qwen model (qwen/qwen3.6-27b)
+    // Initialize base model using active Groq Qwen model (qwen/qwen3.8-27b)
     const baseModel = new ChatGroq({
       apiKey: process.env.GROQ_API_KEY,
-      model: DEFAULT_MODEL_ID, // "qwen/qwen3.6-27b"
+      model: DEFAULT_MODEL_ID, // "qwen/qwen3.8-27b"
     });
 
     // Get tools & bind to model

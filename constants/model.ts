@@ -1,19 +1,41 @@
 export const MODELS = [
   // Groq
   {
-    name: "Qwen 3.6 27B",
-    value: "qwen/qwen3.6-27b",
+    name: "Qwen 3.8 27B",
+    value: "qwen/qwen3.8-27b",
     icon: "/icons/groq.svg",
     disabled: false,
     contextWindow: 131_072,
   },
   // Mistral
   {
-    name: "Mistral 3",
-    value: "mistral-small-2506",
+    name: "Ministral 14B",
+    value: "ministral-14b-2512",
     icon: "/icons/mistral.svg",
     disabled: false,
-    contextWindow: 128_000,
+    contextWindow: 256_000,
+  },
+  {
+    name: "Ministral 8B",
+    value: "ministral-8b-2512",
+    icon: "/icons/mistral.svg",
+    disabled: false,
+    contextWindow: 256_000,
+  },
+  {
+    name: "Ministral 3B",
+    value: "ministral-3b-2512",
+    icon: "/icons/mistral.svg",
+    disabled: false,
+    contextWindow: 256_000,
+  },
+  // OpenAI
+  {
+    name: "GPT-6 Luna",
+    value: "openai/gpt-6-luna",
+    icon: "/icons/openai.svg",
+    disabled: false,
+    contextWindow: 400_000,
   },
 ] as const;
 

@@ -8,6 +8,10 @@ import {
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 import { DotMatrix } from "@/components/assistant-ui/dot-matrix";
 import { MessageTiming } from "@/components/assistant-ui/message-timing";
+import {
+  MessageTokenUsage,
+  TodayTokenUsage,
+} from "@/components/assistant-ui/token-usage";
 import { ToolFallback } from "@/components/assistant-ui/tool-fallback";
 import {
   ToolGroupContent,
@@ -70,8 +74,10 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   BotIcon,
+  BrainIcon,
   ChartColumnIcon,
   CheckIcon,
+  ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CloudSunIcon,
@@ -102,7 +108,7 @@ import {
   type DirectiveChipProps,
 } from "@assistant-ui/react-lexical";
 import Image from "next/image";
-import { useState, type FC, type ReactNode } from "react";
+import { useEffect, useState, type FC, type ReactNode } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/radix/sheet";
 import {
   Tooltip,
@@ -112,6 +118,9 @@ import {
 import { ModelSelector } from "@/components/assistant-ui/model-selector";
 import { docsModelOptions } from "@/components/docs/assistant/docs-model-options";
 import { DEFAULT_MODEL_ID } from "@/constants/model";
+import { useWebSearchStore } from "@/lib/web-search-store";
+import { EFFORT_LEVELS, useEffortStore } from "@/lib/effort-store";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const Logo: FC = () => {
   return (
@@ -264,13 +273,14 @@ const Header: FC<{
         <PanelLeftIcon className="size-4" />
       </TooltipIconButton>
       <ThreadTitle />
+      <TodayTokenUsage className="ml-auto" />
       <TooltipIconButton
         variant="ghost"
         size="icon"
         tooltip="Share"
         side="bottom"
         disabled
-        className="ml-auto size-8"
+        className="size-8"
       >
         <ShareIcon className="size-4" />
       </TooltipIconButton>
@@ -654,12 +664,87 @@ const Composer: FC = () => {
   );
 };
 
+const WebSearchToggle: FC = () => {
+  const enabled = useWebSearchStore((s) => s.enabled);
+  const toggle = useWebSearchStore((s) => s.toggle);
+  // The persisted value is only known on the client; avoid hydration mismatch.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const active = mounted && enabled;
+
+  return (
+    <TooltipIconButton
+      tooltip={active ? "Web search on" : "Web search off"}
+      side="bottom"
+      type="button"
+      variant="ghost"
+      onClick={toggle}
+      aria-pressed={active}
+      className={cn(
+        "aui-composer-web-search h-7 w-auto gap-1.5 rounded-full px-2.5 text-xs",
+        active
+          ? "bg-sky-500/15 text-sky-600 hover:bg-sky-500/25 hover:text-sky-600 dark:text-sky-400 dark:hover:text-sky-400"
+          : "text-muted-foreground",
+      )}
+    >
+      <GlobeIcon className="size-4" />
+      Web search
+    </TooltipIconButton>
+  );
+};
+
+const EffortPicker: FC = () => {
+  const effort = useEffortStore((s) => s.effort);
+  const setEffort = useEffortStore((s) => s.setEffort);
+  const [open, setOpen] = useState(false);
+  // The persisted value is only known on the client; avoid hydration mismatch.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const current = mounted ? effort : "low";
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={
+          <button
+            type="button"
+            aria-label={`Reasoning effort: ${current}`}
+            className="aui-composer-effort text-muted-foreground hover:bg-accent hover:text-accent-foreground flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs transition-colors"
+          />
+        }
+      >
+        <BrainIcon className="size-4" />
+        Effort: <span className="capitalize">{current}</span>
+        <ChevronDownIcon className="size-3 opacity-60" />
+      </PopoverTrigger>
+      <PopoverContent side="top" align="start" className="w-40 gap-0.5 p-1">
+        {EFFORT_LEVELS.map((level) => (
+          <button
+            key={level}
+            type="button"
+            onClick={() => {
+              setEffort(level);
+              setOpen(false);
+            }}
+            className="hover:bg-accent hover:text-accent-foreground flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm capitalize"
+          >
+            {level}
+            {level === current && <CheckIcon className="size-4" />}
+          </button>
+        ))}
+      </PopoverContent>
+    </Popover>
+  );
+};
+
 const ComposerAction: FC = () => {
   return (
     <div className="aui-composer-action-wrapper relative flex items-center justify-between">
       <div className="flex items-center gap-1">
         <ComposerAddAttachment />
         <ModelPicker />
+        <WebSearchToggle />
+        <EffortPicker />
       </div>
       <div className="flex items-center gap-1.5">
         <AuiIf condition={(s) => s.thread.capabilities.dictation}>
@@ -885,6 +970,7 @@ const AssistantActionBar: FC = () => {
         </ActionBarMorePrimitive.Content>
       </ActionBarMorePrimitive.Root>
       <MessageTiming />
+      <MessageTokenUsage />
     </ActionBarPrimitive.Root>
   );
 };
